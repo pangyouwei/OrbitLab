@@ -64,8 +64,8 @@ def save_trajectory_plot(
             trajectory[0, 1],
             s=marker_size,
             color=color,
-            edgecolors="white",
-            linewidths=1.2,
+            edgecolors=color,
+            linewidths=0.6,
             zorder=3,
         )
 
@@ -112,7 +112,7 @@ def save_trajectory_animation(
         (marker,) = axis.plot(
             [], [], "o", color=color,
             markersize=12 * (float(masses[body_index]) / largest_mass) ** (1 / 3),
-            markeredgecolor="white", markeredgewidth=0.8, label=name,
+            markeredgecolor=color, markeredgewidth=0.5, label=name,
         )
         markers.append(marker)
 

@@ -1,0 +1,47 @@
+{
+  "config": "examples\\two_body_2.json",
+  "bodies": [
+    "star_A",
+    "star_B"
+  ],
+  "steps": 8886,
+  "dt": 0.002,
+  "final_time": 17.772000000000002,
+  "integrator": "velocity_verlet",
+  "final_positions": [
+    [
+      -0.49999991143973677,
+      -0.0002975910925220497
+    ],
+    [
+      0.49999991143973677,
+      0.0002975910925220497
+    ]
+  ],
+  "final_velocities": [
+    [
+      0.0004208564462833573,
+      -0.7071066559433923
+    ],
+    [
+      -0.0004208564462833573,
+      0.7071066559433923
+    ]
+  ],
+  "initial_center_of_mass": [
+    0.0,
+    0.0
+  ],
+  "final_center_of_mass": [
+    0.0,
+    0.0
+  ],
+  "initial_center_of_mass_velocity": [
+    0.0,
+    0.0
+  ],
+  "final_center_of_mass_velocity": [
+    0.0,
+    0.0
+  ]
+}
