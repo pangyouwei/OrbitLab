@@ -104,11 +104,12 @@ def save_trajectory_animation(
     colors = ["tab:orange", "tab:blue"]
     largest_mass = float(np.max(masses))
     figure, axis = plt.subplots(figsize=(8, 8), dpi=120)
+    trails = []
     markers = []
     for body_index, name in enumerate(names):
         color = colors[body_index % len(colors)]
-        trajectory = positions[:, body_index, :]
-        axis.plot(trajectory[:, 0], trajectory[:, 1], color=color, linewidth=1.8, alpha=0.7)
+        (trail,) = axis.plot([], [], color=color, linewidth=1.8, alpha=0.7)
+        trails.append(trail)
         (marker,) = axis.plot(
             [], [], "o", color=color,
             markersize=12 * (float(masses[body_index]) / largest_mass) ** (1 / 3),
@@ -134,12 +135,14 @@ def save_trajectory_animation(
     def update(frame_index: int):
         step_index = int(frame_indices[frame_index])
         for body_index in range(len(names)):
+            trajectory = positions[: step_index + 1, body_index, :]
+            trails[body_index].set_data(trajectory[:, 0], trajectory[:, 1])
             markers[body_index].set_data(
                 [positions[step_index, body_index, 0]],
                 [positions[step_index, body_index, 1]],
             )
         time_label.set_text(f"Simulation time: {times[step_index]:.2f}")
-        return (*markers, time_label)
+        return (*trails, *markers, time_label)
 
     animation = FuncAnimation(
         figure, update, frames=len(frame_indices), interval=1000 / fps
