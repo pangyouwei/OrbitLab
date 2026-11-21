@@ -1,23 +1,23 @@
 {
   "G": 1.0,
   "dt": 0.001,
-  "steps": 6000,
+  "steps": 12000,
   "softening": 0.0,
   "bodies": [
     {
-      "name": "body_A",
+      "name": "star_A",
       "mass": 1.0,
       "position": [0.5773502692, 0.0],
       "velocity": [0.0, 1.001]
     },
     {
-      "name": "body_B",
+      "name": "star_B",
       "mass": 1.0,
       "position": [-0.2886751346, 0.5],
       "velocity": [-0.8660254038, -0.5005]
     },
     {
-      "name": "body_C",
+      "name": "star_C",
       "mass": 1.0,
       "position": [-0.2886751346, -0.5],
       "velocity": [0.8660254038, -0.5005]
