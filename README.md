@@ -23,19 +23,18 @@ python -m pip install -r requirements.txt
 python -m orbitlab.run examples/two_body.json
 ```
 
-默认输出到 `outputs/`：
+仓库中保留了两套已生成结果：
 
-- `two_body_trajectory.png`：1600 × 1600 像素的二维轨迹图，恒星标记较大、行星标记较小；
-- `two_body_trajectory.svg`：可放大查看的矢量轨迹图；
-- `two_body_animation.avi`：MJPEG 编码的视频，适合兼容性较差的本地播放器；
-- `two_body_animation.gif`：960 × 960 像素、30 帧/秒的循环预览；
-- `two_body_trajectory.csv`：每个时间步的位置和速度；
-- `two_body_summary.json`：本次运行的参数和基本结果。
+- `outputs/two_1/`：原版不等质量系统，`star` 质量为 `1`、`planet` 质量为 `0.001`；
+- `outputs/two_2/`：新版等质量双星系统，`star_A` 和 `star_B` 的质量都为 `1`；
+- 每个目录都包含轨迹 PNG、SVG、CSV、AVI、GIF 和运行摘要 JSON。
+
+运行命令默认仍写入 `outputs/`；若要把新实验结果保存到某个版本目录，可指定输出目录：
 
 也可以指定输出目录：
 
 ```bash
-python -m orbitlab.run examples/two_body.json --output-dir outputs/demo
+python -m orbitlab.run examples/two_body.json --output-dir outputs/two_2
 ```
 
 ## 模型说明
@@ -68,6 +67,8 @@ OrbitLab/
 ├── examples/
 │   └── two_body.json
 ├── outputs/
+│   ├── two_1/           # 原版不等质量结果
+│   └── two_2/           # 新版等质量双星结果
 ├── requirements.txt
 └── README.md
 ```
