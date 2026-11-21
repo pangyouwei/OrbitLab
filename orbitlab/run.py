@@ -10,7 +10,12 @@ import numpy as np
 
 from .integrators import velocity_verlet_step
 from .physics import accelerations
-from .visualize import save_summary, save_trajectory_csv, save_trajectory_plot
+from .visualize import (
+    save_summary,
+    save_trajectory_animation,
+    save_trajectory_csv,
+    save_trajectory_plot,
+)
 
 
 def load_config(path: Path) -> dict:
@@ -94,7 +99,10 @@ def main() -> None:
         args.output_dir / f"{stem}_trajectory.csv", times, positions, velocities, names
     )
     save_trajectory_plot(
-        args.output_dir / f"{stem}_trajectory.png", positions, names, masses
+        args.output_dir / f"{stem}_trajectory.png", positions, names
+    )
+    save_trajectory_animation(
+        args.output_dir / f"{stem}_animation.mp4", times, positions, names
     )
     summary = {
         "config": str(args.config),

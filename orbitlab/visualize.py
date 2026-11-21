@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import csv
 import json
+import subprocess
 from pathlib import Path
 
+import imageio_ffmpeg
 import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.animation import FFMpegWriter, FuncAnimation
 import numpy as np
 
 
@@ -42,38 +45,139 @@ def save_trajectory_plot(
     path: Path,
     positions: np.ndarray,
     names: list[str],
-    masses: np.ndarray,
 ) -> None:
     """Save an equal-aspect plot of all body trajectories."""
-    figure, axis = plt.subplots(figsize=(8, 8), dpi=150)
+    figure, axis = plt.subplots(figsize=(8, 8), dpi=200)
     colors = ["tab:orange", "tab:blue"]
     for body_index, name in enumerate(names):
         trajectory = positions[:, body_index, :]
         color = colors[body_index % len(colors)]
-        axis.plot(trajectory[:, 0], trajectory[:, 1], color=color, linewidth=1.2, label=name)
-        axis.scatter(
-            trajectory[0, 0], trajectory[0, 1], color=color, marker="o", s=28,
-            edgecolors="black", linewidths=0.4,
-        )
-        axis.scatter(
-            trajectory[-1, 0], trajectory[-1, 1], color=color, marker="x", s=36,
-            linewidths=1.2,
-        )
-        axis.scatter(
-            trajectory[0, 0], trajectory[0, 1], color=color,
-            s=max(25.0, 55.0 * float(masses[body_index]) ** (1 / 3)),
-            alpha=0.35,
-        )
+        axis.plot(trajectory[:, 0], trajectory[:, 1], color=color, linewidth=2, label=name)
 
-    axis.set_title("OrbitLab: 2D two-body gravitational motion")
+    coordinates = positions.reshape(-1, 2)
+    lower = coordinates.min(axis=0)
+    upper = coordinates.max(axis=0)
+    center = (lower + upper) / 2
+    half_width = max(float(np.max(upper - lower)) * 0.56, 0.1)
+    axis.set_xlim(center[0] - half_width, center[0] + half_width)
+    axis.set_ylim(center[1] - half_width, center[1] + half_width)
+    axis.set_title("OrbitLab: two-body orbit")
     axis.set_xlabel("x")
     axis.set_ylabel("y")
     axis.set_aspect("equal", adjustable="box")
-    axis.grid(True, alpha=0.25)
-    axis.legend()
+    axis.grid(True, alpha=0.18)
+    axis.legend(frameon=False)
     figure.tight_layout()
     figure.savefig(path)
+    figure.savefig(path.with_suffix(".svg"))
     plt.close(figure)
+
+
+def save_trajectory_animation(
+    path: Path,
+    times: np.ndarray,
+    positions: np.ndarray,
+    names: list[str],
+    max_frames: int = 180,
+    fps: int = 30,
+) -> None:
+    """Save a high-resolution MP4 and a GIF preview of both body trajectories."""
+    frame_indices = np.linspace(
+        0, len(times) - 1, num=min(max_frames, len(times)), dtype=int
+    )
+    colors = ["tab:orange", "tab:blue"]
+    figure, axis = plt.subplots(figsize=(8, 8), dpi=120)
+    markers = []
+    for body_index, name in enumerate(names):
+        color = colors[body_index % len(colors)]
+        trajectory = positions[:, body_index, :]
+        axis.plot(trajectory[:, 0], trajectory[:, 1], color=color, linewidth=1.8, alpha=0.7)
+        (marker,) = axis.plot(
+            [], [], "o", color=color, markersize=12 if body_index == 0 else 7,
+            markeredgecolor="white", markeredgewidth=0.8, label=name,
+        )
+        markers.append(marker)
+
+    coordinates = positions.reshape(-1, 2)
+    lower = coordinates.min(axis=0)
+    upper = coordinates.max(axis=0)
+    center = (lower + upper) / 2
+    half_width = max(float(np.max(upper - lower)) * 0.58, 0.1)
+    axis.set_xlim(center[0] - half_width, center[0] + half_width)
+    axis.set_ylim(center[1] - half_width, center[1] + half_width)
+    axis.set_aspect("equal", adjustable="box")
+    axis.set_xlabel("x")
+    axis.set_ylabel("y")
+    axis.set_title("OrbitLab: 2D two-body motion")
+    axis.grid(True, alpha=0.25)
+    axis.legend(loc="upper right")
+    time_label = axis.text(0.03, 0.96, "", transform=axis.transAxes, va="top")
+
+    def update(frame_index: int):
+        step_index = int(frame_indices[frame_index])
+        for body_index in range(len(names)):
+            markers[body_index].set_data(
+                [positions[step_index, body_index, 0]],
+                [positions[step_index, body_index, 1]],
+            )
+        time_label.set_text(f"Simulation time: {times[step_index]:.2f}")
+        return (*markers, time_label)
+
+    animation = FuncAnimation(
+        figure, update, frames=len(frame_indices), interval=1000 / fps
+    )
+    try:
+        matplotlib.rcParams["animation.ffmpeg_path"] = imageio_ffmpeg.get_ffmpeg_exe()
+        animation.save(
+            path,
+            writer=FFMpegWriter(
+                fps=fps,
+                codec="libx264",
+                extra_args=[
+                    "-crf", "18",
+                    "-profile:v", "baseline",
+                    "-level:v", "4.0",
+                    "-bf", "0",
+                    "-pix_fmt", "yuv420p",
+                    "-movflags", "+faststart",
+                ],
+            ),
+        )
+    finally:
+        plt.close(figure)
+
+    subprocess.run(
+        [
+            imageio_ffmpeg.get_ffmpeg_exe(),
+            "-loglevel", "error",
+            "-y",
+            "-i", str(path),
+            "-filter_complex",
+            "[0:v]fps=30,split=2[a][b];"
+            "[a]palettegen=stats_mode=full[p];"
+            "[b][p]paletteuse=dither=bayer:bayer_scale=5[v]",
+            "-map", "[v]",
+            "-loop", "0",
+            str(path.with_suffix(".gif")),
+        ],
+        check=True,
+    )
+
+    subprocess.run(
+        [
+            imageio_ffmpeg.get_ffmpeg_exe(),
+            "-loglevel", "error",
+            "-y",
+            "-i", str(path),
+            "-an",
+            "-c:v", "mjpeg",
+            "-q:v", "3",
+            "-pix_fmt", "yuvj420p",
+            "-vtag", "MJPG",
+            str(path.with_suffix(".avi")),
+        ],
+        check=True,
+    )
 
 
 def save_summary(path: Path, summary: dict) -> None:
