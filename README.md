@@ -25,7 +25,7 @@ python -m orbitlab.run examples/two_body.json
 
 默认输出到 `outputs/`：
 
-- `two_body_trajectory.png`：1600 × 1600 像素的二维轨迹图；
+- `two_body_trajectory.png`：1600 × 1600 像素的二维轨迹图，恒星标记较大、行星标记较小；
 - `two_body_trajectory.svg`：可放大查看的矢量轨迹图；
 - `two_body_animation.mp4`：960 × 960 像素、30 帧/秒的 H.264 Baseline 动画，适合本地播放器和浏览器；
 - `two_body_animation.avi`：MJPEG 编码的备用视频，供不兼容 MP4 的播放器尝试；

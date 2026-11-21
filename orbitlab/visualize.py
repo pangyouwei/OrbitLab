@@ -45,6 +45,7 @@ def save_trajectory_plot(
     path: Path,
     positions: np.ndarray,
     names: list[str],
+    masses: np.ndarray,
 ) -> None:
     """Save an equal-aspect plot of all body trajectories."""
     figure, axis = plt.subplots(figsize=(8, 8), dpi=200)
@@ -53,6 +54,16 @@ def save_trajectory_plot(
         trajectory = positions[:, body_index, :]
         color = colors[body_index % len(colors)]
         axis.plot(trajectory[:, 0], trajectory[:, 1], color=color, linewidth=2, label=name)
+        marker_size = 260 if body_index == 0 else 42
+        axis.scatter(
+            trajectory[0, 0],
+            trajectory[0, 1],
+            s=marker_size,
+            color=color,
+            edgecolors="white",
+            linewidths=1.2,
+            zorder=3,
+        )
 
     coordinates = positions.reshape(-1, 2)
     lower = coordinates.min(axis=0)

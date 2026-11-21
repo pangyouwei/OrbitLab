@@ -99,7 +99,7 @@ def main() -> None:
         args.output_dir / f"{stem}_trajectory.csv", times, positions, velocities, names
     )
     save_trajectory_plot(
-        args.output_dir / f"{stem}_trajectory.png", positions, names
+        args.output_dir / f"{stem}_trajectory.png", positions, names, masses
     )
     save_trajectory_animation(
         args.output_dir / f"{stem}_animation.mp4", times, positions, names
