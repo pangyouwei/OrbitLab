@@ -28,6 +28,8 @@ python -m orbitlab.run examples/two_body_2.json
 - `examples/two_body_1.json` → `outputs/two_body_1/`；
 - `examples/two_body_2.json` → `outputs/two_body_2/`。
 
+`two_body_1.json` 使用质量比 `1000:1` 的圆轨道初始条件：两体间距为 `1`，共同质心在原点，行星初速度约为 `31.607`。由于质量比很大，恒星的轨道半径约为 `0.001`，行星会近似绕恒星运动。
+
 仓库中也可以保留多套已生成结果：
 
 - 每个配置对应的输出目录都包含轨迹 PNG、SVG、CSV、AVI、GIF 和运行摘要 JSON。
