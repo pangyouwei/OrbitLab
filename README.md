@@ -20,21 +20,22 @@ python -m pip install -r requirements.txt
 在项目根目录执行：
 
 ```bash
-python -m orbitlab.run examples/two_body.json
+python -m orbitlab.run examples/two_body_2.json
 ```
 
-仓库中保留了两套已生成结果：
+程序会根据配置文件名自动创建输出子目录。例如：
 
-- `outputs/two_1/`：原版不等质量系统，`star` 质量为 `1`、`planet` 质量为 `0.001`；
-- `outputs/two_2/`：新版等质量双星系统，`star_A` 和 `star_B` 的质量都为 `1`；
-- 每个目录都包含轨迹 PNG、SVG、CSV、AVI、GIF 和运行摘要 JSON。
+- `examples/two_body_1.json` → `outputs/two_body_1/`；
+- `examples/two_body_2.json` → `outputs/two_body_2/`。
 
-运行命令默认仍写入 `outputs/`；若要把新实验结果保存到某个版本目录，可指定输出目录：
+仓库中也可以保留多套已生成结果：
 
-也可以指定输出目录：
+- 每个配置对应的输出目录都包含轨迹 PNG、SVG、CSV、AVI、GIF 和运行摘要 JSON。
+
+`--output-dir` 指定的是输出根目录，程序仍会在其下追加配置文件名：
 
 ```bash
-python -m orbitlab.run examples/two_body.json --output-dir outputs/two_2
+python -m orbitlab.run examples/two_body_2.json --output-dir outputs
 ```
 
 ## 模型说明
@@ -65,10 +66,11 @@ OrbitLab/
 │   ├── visualize.py     # 轨迹图、AVI、GIF 和 CSV 输出
 │   └── run.py           # 命令行入口和模拟流程
 ├── examples/
-│   └── two_body.json
+│   ├── two_body_1.json
+│   └── two_body_2.json
 ├── outputs/
-│   ├── two_1/           # 原版不等质量结果
-│   └── two_2/           # 新版等质量双星结果
+│   ├── two_body_1/      # two_body_1.json 的结果
+│   └── two_body_2/      # two_body_2.json 的结果
 ├── requirements.txt
 └── README.md
 ```

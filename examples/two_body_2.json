@@ -1,0 +1,20 @@
+{
+  "G": 1.0,
+  "dt": 0.002,
+  "steps": 8886,
+  "softening": 0.0,
+  "bodies": [
+    {
+      "name": "star_A",
+      "mass": 1.0,
+      "position": [-0.5, 0.0],
+      "velocity": [0.0, -0.7071067811865476]
+    },
+    {
+      "name": "star_B",
+      "mass": 1.0,
+      "position": [0.5, 0.0],
+      "velocity": [0.0, 0.7071067811865476]
+    }
+  ]
+}

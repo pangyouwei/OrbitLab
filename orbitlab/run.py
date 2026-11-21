@@ -87,22 +87,26 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Simulate a 2D two-body orbit")
     parser.add_argument("config", type=Path, help="path to a JSON configuration")
     parser.add_argument(
-        "--output-dir", type=Path, default=Path("outputs"), help="directory for results"
+        "--output-dir",
+        type=Path,
+        default=Path("outputs"),
+        help="base directory; a subdirectory named after the config is created",
     )
     args = parser.parse_args()
 
     config = load_config(args.config)
     times, positions, velocities, names, masses = simulate(config)
-    args.output_dir.mkdir(parents=True, exist_ok=True)
     stem = args.config.stem
+    output_dir = args.output_dir / stem
+    output_dir.mkdir(parents=True, exist_ok=True)
     save_trajectory_csv(
-        args.output_dir / f"{stem}_trajectory.csv", times, positions, velocities, names
+        output_dir / f"{stem}_trajectory.csv", times, positions, velocities, names
     )
     save_trajectory_plot(
-        args.output_dir / f"{stem}_trajectory.png", positions, names, masses
+        output_dir / f"{stem}_trajectory.png", positions, names, masses
     )
     save_trajectory_animation(
-        args.output_dir / f"{stem}_animation.avi", times, positions, names, masses
+        output_dir / f"{stem}_animation.avi", times, positions, names, masses
     )
     summary = {
         "config": str(args.config),
@@ -122,9 +126,9 @@ def main() -> None:
             velocities[-1], masses
         ).tolist(),
     }
-    save_summary(args.output_dir / f"{stem}_summary.json", summary)
+    save_summary(output_dir / f"{stem}_summary.json", summary)
     print(f"Simulated {len(times)} time points through t={times[-1]:.6g}.")
-    print(f"Saved results to {args.output_dir.resolve()}")
+    print(f"Saved results to {output_dir.resolve()}")
 
 
 if __name__ == "__main__":
