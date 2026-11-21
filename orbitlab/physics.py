@@ -5,6 +5,20 @@ from __future__ import annotations
 import numpy as np
 
 
+def center_of_mass(positions: np.ndarray, masses: np.ndarray) -> np.ndarray:
+    """Return the mass-weighted center position of all bodies."""
+    positions = np.asarray(positions, dtype=float)
+    masses = np.asarray(masses, dtype=float)
+    return np.sum(positions * masses[:, None], axis=0) / np.sum(masses)
+
+
+def center_of_mass_velocity(velocities: np.ndarray, masses: np.ndarray) -> np.ndarray:
+    """Return the mass-weighted center velocity of all bodies."""
+    velocities = np.asarray(velocities, dtype=float)
+    masses = np.asarray(masses, dtype=float)
+    return np.sum(velocities * masses[:, None], axis=0) / np.sum(masses)
+
+
 def accelerations(
     positions: np.ndarray,
     masses: np.ndarray,

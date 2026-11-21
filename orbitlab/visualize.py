@@ -1,3 +1,4 @@
+
 """Output helpers for OrbitLab's first version."""
 
 from __future__ import annotations
@@ -92,7 +93,7 @@ def save_trajectory_animation(
     max_frames: int = 180,
     fps: int = 30,
 ) -> None:
-    """Save a high-resolution MP4 and a GIF preview of both body trajectories."""
+    """Save an AVI animation and a GIF preview of both body trajectories."""
     frame_indices = np.linspace(
         0, len(times) - 1, num=min(max_frames, len(times)), dtype=int
     )
@@ -143,14 +144,11 @@ def save_trajectory_animation(
             path,
             writer=FFMpegWriter(
                 fps=fps,
-                codec="libx264",
+                codec="mjpeg",
                 extra_args=[
-                    "-crf", "18",
-                    "-profile:v", "baseline",
-                    "-level:v", "4.0",
-                    "-bf", "0",
-                    "-pix_fmt", "yuv420p",
-                    "-movflags", "+faststart",
+                    "-q:v", "3",
+                    "-pix_fmt", "yuvj420p",
+                    "-vtag", "MJPG",
                 ],
             ),
         )
@@ -173,23 +171,6 @@ def save_trajectory_animation(
         ],
         check=True,
     )
-
-    subprocess.run(
-        [
-            imageio_ffmpeg.get_ffmpeg_exe(),
-            "-loglevel", "error",
-            "-y",
-            "-i", str(path),
-            "-an",
-            "-c:v", "mjpeg",
-            "-q:v", "3",
-            "-pix_fmt", "yuvj420p",
-            "-vtag", "MJPG",
-            str(path.with_suffix(".avi")),
-        ],
-        check=True,
-    )
-
 
 def save_summary(path: Path, summary: dict) -> None:
     path.write_text(json.dumps(summary, indent=2), encoding="utf-8")

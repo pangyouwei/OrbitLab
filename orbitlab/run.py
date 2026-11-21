@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from .integrators import velocity_verlet_step
-from .physics import accelerations
+from .physics import accelerations, center_of_mass, center_of_mass_velocity
 from .visualize import (
     save_summary,
     save_trajectory_animation,
@@ -102,7 +102,7 @@ def main() -> None:
         args.output_dir / f"{stem}_trajectory.png", positions, names, masses
     )
     save_trajectory_animation(
-        args.output_dir / f"{stem}_animation.mp4", times, positions, names
+        args.output_dir / f"{stem}_animation.avi", times, positions, names
     )
     summary = {
         "config": str(args.config),
@@ -113,6 +113,14 @@ def main() -> None:
         "integrator": "velocity_verlet",
         "final_positions": positions[-1].tolist(),
         "final_velocities": velocities[-1].tolist(),
+        "initial_center_of_mass": center_of_mass(positions[0], masses).tolist(),
+        "final_center_of_mass": center_of_mass(positions[-1], masses).tolist(),
+        "initial_center_of_mass_velocity": center_of_mass_velocity(
+            velocities[0], masses
+        ).tolist(),
+        "final_center_of_mass_velocity": center_of_mass_velocity(
+            velocities[-1], masses
+        ).tolist(),
     }
     save_summary(args.output_dir / f"{stem}_summary.json", summary)
     print(f"Simulated {len(times)} time points through t={times[-1]:.6g}.")

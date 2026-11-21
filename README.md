@@ -7,7 +7,7 @@
 - Python 3.10+
 - NumPy
 - Matplotlib
-- imageio-ffmpeg（编码 MP4 和 GIF）
+- imageio-ffmpeg（编码 AVI 和 GIF）
 
 安装依赖：
 
@@ -27,8 +27,7 @@ python -m orbitlab.run examples/two_body.json
 
 - `two_body_trajectory.png`：1600 × 1600 像素的二维轨迹图，恒星标记较大、行星标记较小；
 - `two_body_trajectory.svg`：可放大查看的矢量轨迹图；
-- `two_body_animation.mp4`：960 × 960 像素、30 帧/秒的 H.264 Baseline 动画，适合本地播放器和浏览器；
-- `two_body_animation.avi`：MJPEG 编码的备用视频，供不兼容 MP4 的播放器尝试；
+- `two_body_animation.avi`：MJPEG 编码的视频，适合兼容性较差的本地播放器；
 - `two_body_animation.gif`：960 × 960 像素、30 帧/秒的循环预览；
 - `two_body_trajectory.csv`：每个时间步的位置和速度；
 - `two_body_summary.json`：本次运行的参数和基本结果。
@@ -51,7 +50,7 @@ python -m orbitlab.run examples/two_body.json --output-dir outputs/demo
 
 时间推进使用 Velocity Verlet。示例采用无量纲单位 `G=1`、中心天体质量 `1`、轨道半径约 `1`，因此行星初速度约为 `1` 时会形成近似圆轨道。
 
-示例初始条件将共同质心放在原点，两个天体相距 `1`。相对圆轨道速度取 `sqrt(G * (m_star + m_planet) / r)`，再按质量比分配给两者，所以它们都绕质心运动。数值积分仍会有极小误差；圆轨道不是直接绘制的几何圆。
+示例初始条件将共同质心放在原点，两个天体相距 `1`。相对圆轨道速度取 `sqrt(G * (m_star + m_planet) / r)`，再按质量比分配给两者，所以两个天体都绕共同质心运动：恒星的小轨道半径约为 `0.001`，行星的轨道半径约为 `0.999`。程序还会把初始和最终质心位置、质心速度写入摘要，用来检查质心是否保持不动。
 
 示例的 `9420` 步约等于三个轨道周期，因此 GIF 循环播放时天体会回到起点附近。动画中的轨道线始终显示，天体标记随模拟时间移动。
 
@@ -64,7 +63,7 @@ OrbitLab/
 ├── orbitlab/
 │   ├── physics.py       # 引力和加速度
 │   ├── integrators.py   # Velocity Verlet
-│   ├── visualize.py     # 轨迹图、MP4、AVI、GIF 和 CSV 输出
+│   ├── visualize.py     # 轨迹图、AVI、GIF 和 CSV 输出
 │   └── run.py           # 命令行入口和模拟流程
 ├── examples/
 │   └── two_body.json
