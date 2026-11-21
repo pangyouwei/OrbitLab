@@ -51,11 +51,14 @@ def save_trajectory_plot(
     """Save an equal-aspect plot of all body trajectories."""
     figure, axis = plt.subplots(figsize=(8, 8), dpi=200)
     colors = ["tab:orange", "tab:blue"]
+    largest_mass = float(np.max(masses))
     for body_index, name in enumerate(names):
         trajectory = positions[:, body_index, :]
         color = colors[body_index % len(colors)]
         axis.plot(trajectory[:, 0], trajectory[:, 1], color=color, linewidth=2, label=name)
-        marker_size = 260 if body_index == 0 else 42
+        marker_size = max(
+            42.0, 260.0 * (float(masses[body_index]) / largest_mass) ** (1 / 3)
+        )
         axis.scatter(
             trajectory[0, 0],
             trajectory[0, 1],
@@ -90,6 +93,7 @@ def save_trajectory_animation(
     times: np.ndarray,
     positions: np.ndarray,
     names: list[str],
+    masses: np.ndarray,
     max_frames: int = 180,
     fps: int = 30,
 ) -> None:
@@ -98,6 +102,7 @@ def save_trajectory_animation(
         0, len(times) - 1, num=min(max_frames, len(times)), dtype=int
     )
     colors = ["tab:orange", "tab:blue"]
+    largest_mass = float(np.max(masses))
     figure, axis = plt.subplots(figsize=(8, 8), dpi=120)
     markers = []
     for body_index, name in enumerate(names):
@@ -105,7 +110,8 @@ def save_trajectory_animation(
         trajectory = positions[:, body_index, :]
         axis.plot(trajectory[:, 0], trajectory[:, 1], color=color, linewidth=1.8, alpha=0.7)
         (marker,) = axis.plot(
-            [], [], "o", color=color, markersize=12 if body_index == 0 else 7,
+            [], [], "o", color=color,
+            markersize=12 * (float(masses[body_index]) / largest_mass) ** (1 / 3),
             markeredgecolor="white", markeredgewidth=0.8, label=name,
         )
         markers.append(marker)

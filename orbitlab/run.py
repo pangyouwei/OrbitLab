@@ -102,7 +102,7 @@ def main() -> None:
         args.output_dir / f"{stem}_trajectory.png", positions, names, masses
     )
     save_trajectory_animation(
-        args.output_dir / f"{stem}_animation.avi", times, positions, names
+        args.output_dir / f"{stem}_animation.avi", times, positions, names, masses
     )
     summary = {
         "config": str(args.config),
