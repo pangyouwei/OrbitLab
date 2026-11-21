@@ -1,4 +1,4 @@
-"""Command-line entry point for the first OrbitLab simulation."""
+"""Command-line entry point for OrbitLab's 2-D N-body simulation."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 
+from .diagnostics import compute_diagnostic_history, save_diagnostics_csv
 from .integrators import velocity_verlet_step
 from .physics import accelerations, center_of_mass, center_of_mass_velocity
 from .visualize import (
@@ -23,8 +24,8 @@ def load_config(path: Path) -> dict:
         config = json.load(file)
 
     bodies = config.get("bodies")
-    if not isinstance(bodies, list) or len(bodies) != 2:
-        raise ValueError("the first version requires exactly two bodies")
+    if not isinstance(bodies, list) or len(bodies) < 2:
+        raise ValueError("the configuration requires at least two bodies")
     for body in bodies:
         for key in ("name", "mass", "position", "velocity"):
             if key not in body:
@@ -63,8 +64,9 @@ def simulate(
         )
 
     times = np.arange(steps + 1, dtype=float) * dt
-    position_history = np.empty((steps + 1, 2, 2), dtype=float)
-    velocity_history = np.empty((steps + 1, 2, 2), dtype=float)
+    number_of_bodies = len(bodies)
+    position_history = np.empty((steps + 1, number_of_bodies, 2), dtype=float)
+    velocity_history = np.empty((steps + 1, number_of_bodies, 2), dtype=float)
     position_history[0] = positions
     velocity_history[0] = velocities
     current_accelerations = acceleration_function(positions)
@@ -84,7 +86,7 @@ def simulate(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Simulate a 2D two-body orbit")
+    parser = argparse.ArgumentParser(description="Simulate a 2D Newtonian N-body system")
     parser.add_argument("config", type=Path, help="path to a JSON configuration")
     parser.add_argument(
         "--output-dir",
@@ -96,6 +98,8 @@ def main() -> None:
 
     config = load_config(args.config)
     times, positions, velocities, names, masses = simulate(config)
+    gravitational_constant = float(config.get("G", 1.0))
+    softening = float(config.get("softening", 0.0))
     stem = args.config.stem
     output_dir = args.output_dir / stem
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -107,6 +111,17 @@ def main() -> None:
     )
     save_trajectory_animation(
         output_dir / f"{stem}_animation.avi", times, positions, names, masses
+    )
+    diagnostic_history = compute_diagnostic_history(
+        times,
+        positions,
+        velocities,
+        masses,
+        gravitational_constant,
+        softening,
+    )
+    save_diagnostics_csv(
+        output_dir / f"{stem}_diagnostics.csv", diagnostic_history
     )
     summary = {
         "config": str(args.config),
@@ -125,6 +140,32 @@ def main() -> None:
         "final_center_of_mass_velocity": center_of_mass_velocity(
             velocities[-1], masses
         ).tolist(),
+        "initial_total_energy": float(diagnostic_history["energy"][0]),
+        "final_total_energy": float(diagnostic_history["energy"][-1]),
+        "maximum_relative_energy_error": float(
+            np.max(diagnostic_history["relative_energy_error"])
+        ),
+        "initial_total_momentum": [
+            float(diagnostic_history["momentum_x"][0]),
+            float(diagnostic_history["momentum_y"][0]),
+        ],
+        "final_total_momentum": [
+            float(diagnostic_history["momentum_x"][-1]),
+            float(diagnostic_history["momentum_y"][-1]),
+        ],
+        "maximum_momentum_drift": float(np.max(diagnostic_history["momentum_drift"])),
+        "initial_angular_momentum_z": float(
+            diagnostic_history["angular_momentum_z"][0]
+        ),
+        "final_angular_momentum_z": float(
+            diagnostic_history["angular_momentum_z"][-1]
+        ),
+        "maximum_angular_momentum_drift": float(
+            np.max(diagnostic_history["angular_momentum_drift"])
+        ),
+        "maximum_center_of_mass_drift": float(
+            np.max(diagnostic_history["center_of_mass_drift"])
+        ),
     }
     save_summary(output_dir / f"{stem}_summary.json", summary)
     print(f"Simulated {len(times)} time points through t={times[-1]:.6g}.")

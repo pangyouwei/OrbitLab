@@ -1,0 +1,72 @@
+{
+  "config": "examples/three_body_perturbed.json",
+  "bodies": [
+    "body_A",
+    "body_B",
+    "body_C"
+  ],
+  "steps": 6000,
+  "dt": 0.001,
+  "final_time": 6.0,
+  "integrator": "velocity_verlet",
+  "final_positions": [
+    [
+      -0.24813445513693427,
+      -0.09438384947405477
+    ],
+    [
+      0.8210334635618916,
+      -0.17115117983205128
+    ],
+    [
+      -0.5728990084249678,
+      0.2655350293061102
+    ]
+  ],
+  "final_velocities": [
+    [
+      0.7672279847625191,
+      0.3832730857166881
+    ],
+    [
+      0.36786828992022486,
+      0.8405432106992722
+    ],
+    [
+      -1.1350962746827475,
+      -1.2238162964159582
+    ]
+  ],
+  "initial_center_of_mass": [
+    0.0,
+    0.0
+  ],
+  "final_center_of_mass": [
+    -3.515706244646329e-15,
+    1.3877787807814457e-15
+  ],
+  "initial_center_of_mass_velocity": [
+    0.0,
+    0.0
+  ],
+  "final_center_of_mass_velocity": [
+    -1.1842378929335002e-15,
+    6.661338147750939e-16
+  ],
+  "initial_total_energy": -1.4984992499460945,
+  "final_total_energy": -1.4985019600024407,
+  "maximum_relative_energy_error": 1.8124338222424163e-06,
+  "initial_total_momentum": [
+    0.0,
+    0.0
+  ],
+  "final_total_momentum": [
+    -3.552713678800501e-15,
+    1.9984014443252818e-15
+  ],
+  "maximum_momentum_drift": 4.407459562045625e-15,
+  "initial_angular_momentum_z": 1.7329168330038,
+  "final_angular_momentum_z": 1.7329168330038067,
+  "maximum_angular_momentum_drift": 9.769962616701378e-15,
+  "maximum_center_of_mass_drift": 3.917766108994833e-15
+}

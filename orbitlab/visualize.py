@@ -16,6 +16,19 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FFMpegWriter, FuncAnimation
 import numpy as np
 
+BODY_COLORS = [
+    "tab:orange",
+    "tab:blue",
+    "tab:green",
+    "tab:red",
+    "tab:purple",
+    "tab:brown",
+    "tab:pink",
+    "tab:gray",
+    "tab:olive",
+    "tab:cyan",
+]
+
 
 def save_trajectory_csv(
     path: Path,
@@ -50,11 +63,10 @@ def save_trajectory_plot(
 ) -> None:
     """Save an equal-aspect plot of all body trajectories."""
     figure, axis = plt.subplots(figsize=(8, 8), dpi=200)
-    colors = ["tab:orange", "tab:blue"]
     largest_mass = float(np.max(masses))
     for body_index, name in enumerate(names):
         trajectory = positions[:, body_index, :]
-        color = colors[body_index % len(colors)]
+        color = BODY_COLORS[body_index % len(BODY_COLORS)]
         axis.plot(trajectory[:, 0], trajectory[:, 1], color=color, linewidth=2, label=name)
         marker_size = max(
             42.0, 260.0 * (float(masses[body_index]) / largest_mass) ** (1 / 3)
@@ -76,7 +88,7 @@ def save_trajectory_plot(
     half_width = max(float(np.max(upper - lower)) * 0.56, 0.1)
     axis.set_xlim(center[0] - half_width, center[0] + half_width)
     axis.set_ylim(center[1] - half_width, center[1] + half_width)
-    axis.set_title("OrbitLab: two-body orbit")
+    axis.set_title("OrbitLab: 2D N-body orbit")
     axis.set_xlabel("x")
     axis.set_ylabel("y")
     axis.set_aspect("equal", adjustable="box")
@@ -97,17 +109,16 @@ def save_trajectory_animation(
     max_frames: int = 180,
     fps: int = 30,
 ) -> None:
-    """Save an AVI animation and a GIF preview of both body trajectories."""
+    """Save an AVI animation and a GIF preview of all body trajectories."""
     frame_indices = np.linspace(
         0, len(times) - 1, num=min(max_frames, len(times)), dtype=int
     )
-    colors = ["tab:orange", "tab:blue"]
     largest_mass = float(np.max(masses))
     figure, axis = plt.subplots(figsize=(8, 8), dpi=120)
     trails = []
     markers = []
     for body_index, name in enumerate(names):
-        color = colors[body_index % len(colors)]
+        color = BODY_COLORS[body_index % len(BODY_COLORS)]
         (trail,) = axis.plot([], [], color=color, linewidth=1.8, alpha=0.7)
         trails.append(trail)
         (marker,) = axis.plot(
@@ -127,7 +138,7 @@ def save_trajectory_animation(
     axis.set_aspect("equal", adjustable="box")
     axis.set_xlabel("x")
     axis.set_ylabel("y")
-    axis.set_title("OrbitLab: 2D two-body motion")
+    axis.set_title("OrbitLab: 2D N-body motion")
     axis.grid(True, alpha=0.25)
     axis.legend(loc="upper right")
     time_label = axis.text(0.03, 0.96, "", transform=axis.transAxes, va="top")

@@ -1,6 +1,6 @@
-# OrbitLab: 二维二体引力模拟
+# OrbitLab: 二维 N 体引力模拟
 
-这是 OrbitLab 的第一版最小可用程序：给定两个点质量天体的初始位置、速度和质量，用二维牛顿万有引力模拟它们的运动，并输出轨迹图、动画和轨迹数据。
+OrbitLab 用二维牛顿万有引力模拟点质量天体的运动。程序支持两个及以上天体，并输出轨迹图、渐进轨迹动画、轨迹数据和守恒量诊断。
 
 ## 环境
 
@@ -20,7 +20,7 @@ python -m pip install -r requirements.txt
 在项目根目录执行：
 
 ```bash
-python -m orbitlab.run examples/two_body_2.json
+python -m orbitlab.run examples/three_body_lagrange.json
 ```
 
 程序会根据配置文件名自动创建输出子目录。例如：
@@ -28,11 +28,11 @@ python -m orbitlab.run examples/two_body_2.json
 - `examples/two_body_1.json` → `outputs/two_body_1/`；
 - `examples/two_body_2.json` → `outputs/two_body_2/`。
 
-`two_body_1.json` 使用质量比 `1000:1` 的圆轨道初始条件：两体间距为 `1`，共同质心在原点，行星初速度约为 `31.607`。由于质量比很大，恒星的轨道半径约为 `0.001`，行星会近似绕恒星运动。
+`two_body_1.json` 使用质量比 `1000:1` 的圆轨道初始条件；`three_body_lagrange.json` 使用三个相同质量天体组成的等边三角形周期解；`three_body_perturbed.json` 在这个解上加入微小速度扰动，同时补偿另外两个天体的速度以保持总动量为零。
 
 仓库中也可以保留多套已生成结果：
 
-- 每个配置对应的输出目录都包含轨迹 PNG、SVG、CSV、AVI、GIF 和运行摘要 JSON。
+- 每个配置对应的输出目录都包含轨迹 PNG、SVG、轨迹 CSV、诊断 CSV、AVI、GIF 和运行摘要 JSON。
 
 `--output-dir` 指定的是输出根目录，程序仍会在其下追加配置文件名：
 
@@ -50,13 +50,13 @@ python -m orbitlab.run examples/two_body_2.json --output-dir outputs
 {(|\mathbf r_j-\mathbf r_i|^2+\epsilon^2)^{3/2}}
 \]
 
-时间推进使用 Velocity Verlet。示例采用无量纲单位 `G=1`，现在模拟两个质量相等的天体。
+时间推进使用 Velocity Verlet。示例采用无量纲单位 `G=1`。Velocity Verlet 不依赖天体数量，因此同一套推进器可以处理三体系统。
 
 示例初始条件将共同质心放在原点，两个天体相距 `1`，质量均为 `1`。相对圆轨道速度为 `sqrt(2)`，因此每个天体的速度大小为 `1/sqrt(2)`；两个天体都以半径 `0.5` 绕共同质心运动。程序还会把初始和最终质心位置、质心速度写入摘要，用来检查质心是否保持不动。
 
-示例的 `8886` 步约等于四个等质量双星轨道周期，因此 GIF 循环播放时天体会回到起点附近。动画从空轨道开始，天体运动时逐步绘制从起点到当前位置的完整轨迹；天体标记随模拟时间移动。
+在示例的 `t=6` 模拟时间内，等边三角形解会近似保持三角形形状整体旋转；微扰解会明显偏离这个理想运动，可用于观察三体系统对初始条件的敏感性。等质量三体的等边解本身是不稳定的，延长模拟时间后，即使没有人为扰动，数值误差也会逐渐放大。动画从空轨道开始，天体运动时逐步绘制从起点到当前位置的完整轨迹。
 
-这是第一阶段版本，暂时只支持两个天体和 Velocity Verlet。动画最多取 180 个时间点显示天体位置，轨道线使用全部模拟点；CSV 保存全部计算结果。后续可以在此基础上加入 Euler、RK4、能量守恒检查和 Barnes-Hut 四叉树。
+每次运行还会计算总能量、总动量、二维角动量和质心漂移。`maximum_relative_energy_error` 越小，说明当前时间步长下的数值误差越小。动画最多取 180 个时间点显示天体位置，轨迹线使用全部模拟点；轨迹 CSV 和诊断 CSV 保存全部计算结果。
 
 ## 目录结构
 
@@ -64,15 +64,20 @@ python -m orbitlab.run examples/two_body_2.json --output-dir outputs
 OrbitLab/
 ├── orbitlab/
 │   ├── physics.py       # 引力和加速度
+│   ├── diagnostics.py   # 能量、动量、角动量和质心漂移
 │   ├── integrators.py   # Velocity Verlet
 │   ├── visualize.py     # 轨迹图、AVI、GIF 和 CSV 输出
 │   └── run.py           # 命令行入口和模拟流程
 ├── examples/
 │   ├── two_body_1.json
-│   └── two_body_2.json
+│   ├── two_body_2.json
+│   ├── three_body_lagrange.json
+│   └── three_body_perturbed.json
 ├── outputs/
 │   ├── two_body_1/      # two_body_1.json 的结果
-│   └── two_body_2/      # two_body_2.json 的结果
+│   ├── two_body_2/      # two_body_2.json 的结果
+│   ├── three_body_lagrange/   # 等边三角形周期解
+│   └── three_body_perturbed/  # 微扰后的三体运动
 ├── requirements.txt
 └── README.md
 ```
