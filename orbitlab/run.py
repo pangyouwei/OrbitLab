@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 
 import numpy as np
@@ -100,22 +101,58 @@ def main() -> None:
         help="skip AVI/GIF encoding for large simulations",
     )
     parser.add_argument(
+        "--animation-only",
+        action="store_true",
+        help="regenerate AVI/GIF without rewriting other outputs",
+    )
+    parser.add_argument(
+        "--duration",
+        type=float,
+        help="physical simulation time; overrides steps using the JSON dt",
+    )
+    parser.add_argument(
         "--max-frames",
         type=int,
-        default=180,
-        help="maximum number of animation frames (default: 180)",
+        default=240,
+        help="maximum number of animation frames (default: 240)",
+    )
+    parser.add_argument(
+        "--fps",
+        type=int,
+        default=20,
+        help="AVI/GIF playback frames per second (default: 20)",
     )
     args = parser.parse_args()
     if args.max_frames < 2:
         parser.error("--max-frames must be at least 2")
+    if args.fps < 1:
+        parser.error("--fps must be positive")
+    if args.duration is not None and (not math.isfinite(args.duration) or args.duration <= 0):
+        parser.error("--duration must be finite and positive")
+    if args.animation_only and args.skip_animation:
+        parser.error("--animation-only and --skip-animation cannot be combined")
 
     config = load_config(args.config)
+    if args.duration is not None:
+        config["steps"] = max(1, math.ceil(args.duration / float(config["dt"])))
     times, positions, velocities, names, masses = simulate(config)
     gravitational_constant = float(config.get("G", 1.0))
     softening = float(config.get("softening", 0.0))
     stem = args.config.stem
     output_dir = args.output_dir / stem
     output_dir.mkdir(parents=True, exist_ok=True)
+    if args.animation_only:
+        save_trajectory_animation(
+            output_dir / f"{stem}_animation.avi",
+            times,
+            positions,
+            names,
+            masses,
+            max_frames=args.max_frames,
+            fps=args.fps,
+        )
+        print(f"Saved animation to {output_dir.resolve()}")
+        return
     save_trajectory_csv(
         output_dir / f"{stem}_trajectory.csv", times, positions, velocities, names
     )
@@ -130,6 +167,7 @@ def main() -> None:
             names,
             masses,
             max_frames=args.max_frames,
+            fps=args.fps,
         )
     diagnostic_history = compute_diagnostic_history(
         times,

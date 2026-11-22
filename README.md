@@ -36,6 +36,14 @@ python -m orbitlab.run examples/three_body_perturbed_strong.json
 - `examples/two_body_1.json` → `outputs/two_body_1/`；
 - `examples/two_body_2.json` → `outputs/two_body_2/`。
 
+物理模拟时间与视频播放时间是两件事。前者通常等于 JSON 中的 `dt × steps`；`--duration` 可以临时覆盖 `steps`。后者由动画帧数除以 fps 决定，默认约为 `240 / 20 = 12` 秒。例如：
+
+```bash
+python -m orbitlab.run examples/forty_eight_body.json --duration 12 --max-frames 400 --fps 20
+```
+
+这会把 48 体系统模拟到 `t=12`，输出约 20 秒的 AVI/GIF。动画镜头随已经走过的全部轨迹扩展，留出边距；天体不会因模拟时间延长而离开画面。轨迹跨度越大，画面也会相应缩小。已有结果只需重做动画、保留 CSV 和摘要时可加 `--animation-only`；此时应使用与原数据相同的物理模拟时间。
+
 `two_body_1.json` 使用质量比 `1000:1` 的圆轨道初始条件；`three_body_lagrange.json` 使用三个相同质量天体组成的等边三角形周期解；`three_body_perturbed_weak.json`、`three_body_perturbed.json` 和 `three_body_perturbed_strong.json` 分别加入大小为 `10^-4`、`10^-3`、`10^-2` 的速度扰动，同时补偿另外两个天体的速度以保持总动量为零。
 
 仓库中也可以保留多套已生成结果：
@@ -64,7 +72,7 @@ python -m orbitlab.run examples/two_body_2.json --output-dir outputs
 
 在示例的 `t=6` 模拟时间内，等边三角形解会近似保持三角形形状整体旋转；三组微扰案例延长到 `t=12`，可以比较扰动大小不同导致的轨迹分离。等质量三体的等边解本身是不稳定的，延长模拟时间后，即使没有人为扰动，数值误差也会逐渐放大。动画从空轨道开始，天体运动时逐步绘制从起点到当前位置的完整轨迹。
 
-每次运行还会计算总能量、总动量、二维角动量和质心漂移。`maximum_relative_energy_error` 越小，说明当前时间步长下的数值误差越小。动画最多取 180 个时间点显示天体位置，轨迹线使用全部模拟点；轨迹 CSV 和诊断 CSV 保存全部计算结果。
+每次运行还会计算总能量、总动量、二维角动量和质心漂移。`maximum_relative_energy_error` 越小，说明当前时间步长下的数值误差越小。动画默认最多取 240 个时间点显示天体位置，轨迹线使用截至当前帧的全部模拟点；轨迹 CSV 和诊断 CSV 保存全部计算结果。
 
 微扰案例在较长时间内可能发生近距离掠过；固定步长遇到这种情况时能量误差会增大。因此比较混沌现象时，应同时查看轨迹图和 `*_summary.json` 中的守恒量误差。
 
@@ -85,11 +93,48 @@ python -m orbitlab.compare examples/twelve_body.json examples/twelve_body_twin.j
 生成更多天体的配置并运行，例如 48 体：
 
 ```bash
-python -m orbitlab.generate --count 48 --seed 42 --dt 0.002 --duration 8 --softening 0.05 --output examples/forty_eight_body.json
-python -m orbitlab.run examples/forty_eight_body.json --skip-animation
+python -m orbitlab.generate --count 48 --seed 42 --dt 0.002 --duration 12 --softening 0.05 --output examples/forty_eight_body.json
+python -m orbitlab.run examples/forty_eight_body.json
 ```
 
-`--skip-animation` 保留静态图、轨迹 CSV 和守恒量诊断，只跳过较耗时的 AVI/GIF 编码；需要动画时去掉它，可用 `--max-frames` 控制帧数。生成器用固定随机种子保证复现，先按对称圆环的引力计算旋转速度，再加入小扰动，并把质心位置与总动量调至零。多体案例采用 `softening=0.05`，这是软化引力模型，可避免近距离接触处的数值奇点；它与理想点质量的 `softening=0` 模型有区别。直接两两计算的成本随天体数约按 `N^2` 增长，因此几十体适合普通笔记本，数千体需要更高效的算法。
+48 体案例现在也有 AVI/GIF。`--skip-animation` 仍可用于只要静态图、轨迹 CSV 和守恒量诊断的运行。生成器用固定随机种子保证复现，先按对称圆环的引力计算旋转速度，再加入小扰动，并把质心位置与总动量调至零。多体案例采用 `softening=0.05`，这是软化引力模型，可避免近距离接触处的数值奇点；它与理想点质量的 `softening=0` 模型有区别。直接两两计算的成本随天体数约按 `N^2` 增长，因此几十体适合普通笔记本，数千体需要更高效的算法。
+
+## 如何修改 JSON，得到想要的运动
+
+先复制一个 `examples/*.json` 并改名，再运行这个新文件。程序会把结果放进 `outputs/新文件名/`，便于保留原案例。JSON 的核心结构如下：
+
+```json
+{
+  "G": 1.0,
+  "dt": 0.001,
+  "steps": 6000,
+  "softening": 0.0,
+  "bodies": [
+    {"name": "A", "mass": 1.0, "position": [-0.5, 0.0], "velocity": [0.0, -0.70710678]},
+    {"name": "B", "mass": 1.0, "position": [0.5, 0.0], "velocity": [0.0, 0.70710678]}
+  ]
+}
+```
+
+| 字段 | 控制什么 | 改动后的常见效果 |
+| --- | --- | --- |
+| `G` | 引力强度，示例采用无量纲 `G=1` | 增大后吸引更强；同样初速度下轨道会改变 |
+| `mass` | 各天体质量，必须大于零 | 大质量天体更难被推动，也会更强地吸引其他天体 |
+| `position: [x,y]` | 初始二维位置 | 改变相互距离和初始几何形状；过近会导致强烈掠过 |
+| `velocity: [vx,vy]` | 初始二维速度 | 沿径向易接近/远离，沿切向更容易形成绕转 |
+| `dt` | 每次积分走过的物理时间 | 越小通常越准，但相同总时长需要更多步，运行更慢 |
+| `steps` | 积分次数 | `dt × steps` 决定模拟终点；增大它不会自动提高精度 |
+| `softening` | 近距离引力软化长度 | 增大后近距离相互作用更平滑，但物理模型也随之改变 |
+
+**想要稳定、近似圆形的二体轨道：**用 `two_body_1.json` 或 `two_body_2.json` 作起点。两个天体初始相距 `d`、质量为 `M` 和 `m` 时，相对圆轨道速度大小为 `sqrt(G × (M+m) / d)`。让位置在质心两侧，速度沿垂直于连线的方向且总动量为零。例如放在 x 轴上，位置可取 `[-m*d/(M+m), 0]` 与 `[M*d/(M+m), 0]`，纵向速度分别取 `-m*v/(M+m)` 与 `M*v/(M+m)`。只改质量而不重算速度，原本的圆轨道通常会变椭圆。
+
+**想要椭圆、近距离掠过或逃逸：**从圆轨道案例复制一份，逐步改变一个天体的切向初速度。略低于圆轨道速度通常使轨道更扁，过高可能使它远离系统；也可调整初始距离。三体以上会相互扰动，二体的简单公式只能作为初始猜测。每次只改一个因素，才能看出原因。
+
+**想要比较三体对初始条件的敏感性：**从 `three_body_lagrange.json` 复制一份，给第一个天体的 `vy` 加一个很小的量，例如 `0.001`，同时给另外两颗等质量天体的 `vy` 各减去 `0.0005`。这样总动量仍为零；现成的弱、中、强扰动配置可直接比较。若想用 `orbitlab.compare`，两份配置必须具有同样的天体顺序、质量、`G`、`softening`、`dt` 和 `steps`。
+
+**想要 12、48 或更多天体：**使用 `python -m orbitlab.generate --count 12 --seed 42 --output examples/my_ring.json` 生成可复现的微扰圆环。`--position-jitter` 和 `--velocity-jitter` 控制初始扰动大小；设为 `0` 得到对称圆环，但对称构型仍可能不稳定。改 `--seed` 可生成另一套初始条件。也可以手动在 `bodies` 数组中增删对象，但每个对象都需要名称、正质量、二维位置和二维速度。
+
+**调到满意且可信的结果：**先用短时长 `--duration 2` 试跑并看轨迹图；再逐步延长。遇到两体近距离擦过、轨迹突然折转时，检查 `*_summary.json` 的 `maximum_relative_energy_error`，把 `dt` 减半、`steps` 加倍，在相同总时长下重跑并比较误差。`softening` 可以防止数值奇点，但要在报告里注明它改变了引力模型。镜头只负责让天体留在画面里，不会修复不准确的数值积分。
 
 ## 目录结构
 
@@ -123,7 +168,7 @@ OrbitLab/
 │   ├── twelve_body/                 # 12 体动画与数据
 │   ├── twelve_body_twin/            # 12 体邻近初始状态
 │   ├── twelve_body_comparison/      # 轨迹差距曲线
-│   └── forty_eight_body/            # 48 体静态图与数据
+│   └── forty_eight_body/            # 48 体图、动画与数据
 ├── requirements.txt
 └── README.md
 ```

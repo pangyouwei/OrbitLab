@@ -1,5 +1,5 @@
 
-"""Output helpers for OrbitLab's first version."""
+"""Output helpers for OrbitLab simulations."""
 
 from __future__ import annotations
 
@@ -26,6 +26,22 @@ def body_colors(count: int) -> list:
     if count <= 20:
         return list(plt.get_cmap("tab20").colors[:count])
     return [plt.get_cmap("hsv")(index / count) for index in range(count)]
+
+
+def camera_limits(positions: np.ndarray, frame_indices: np.ndarray) -> np.ndarray:
+    """Keep every body and its entire trail visible through each frame."""
+    lower = np.minimum.accumulate(positions.min(axis=1), axis=0)[frame_indices]
+    upper = np.maximum.accumulate(positions.max(axis=1), axis=0)[frame_indices]
+    centers = (lower + upper) / 2
+    half_widths = np.maximum(np.max(upper - lower, axis=1) * 0.62, 0.1)
+    return np.column_stack(
+        (
+            centers[:, 0] - half_widths,
+            centers[:, 0] + half_widths,
+            centers[:, 1] - half_widths,
+            centers[:, 1] + half_widths,
+        )
+    )
 
 
 def save_trajectory_csv(
@@ -112,13 +128,14 @@ def save_trajectory_animation(
     positions: np.ndarray,
     names: list[str],
     masses: np.ndarray,
-    max_frames: int = 180,
-    fps: int = 30,
+    max_frames: int = 240,
+    fps: int = 20,
 ) -> None:
     """Save an AVI animation and a GIF preview of all body trajectories."""
     frame_indices = np.linspace(
         0, len(times) - 1, num=min(max_frames, len(times)), dtype=int
     )
+    limits = camera_limits(positions, frame_indices)
     largest_mass = float(np.max(masses))
     colors = body_colors(len(names))
     density_scale = min(1.0, 3.0 / len(names))
@@ -143,13 +160,8 @@ def save_trajectory_animation(
         )
         markers.append(marker)
 
-    coordinates = positions.reshape(-1, 2)
-    lower = coordinates.min(axis=0)
-    upper = coordinates.max(axis=0)
-    center = (lower + upper) / 2
-    half_width = max(float(np.max(upper - lower)) * 0.58, 0.1)
-    axis.set_xlim(center[0] - half_width, center[0] + half_width)
-    axis.set_ylim(center[1] - half_width, center[1] + half_width)
+    axis.set_xlim(limits[0, 0], limits[0, 1])
+    axis.set_ylim(limits[0, 2], limits[0, 3])
     axis.set_aspect("equal", adjustable="box")
     axis.set_xlabel("x")
     axis.set_ylabel("y")
@@ -161,6 +173,9 @@ def save_trajectory_animation(
 
     def update(frame_index: int):
         step_index = int(frame_indices[frame_index])
+        left, right, bottom, top = limits[frame_index]
+        axis.set_xlim(left, right)
+        axis.set_ylim(bottom, top)
         for body_index in range(len(names)):
             trajectory = positions[: step_index + 1, body_index, :]
             trails[body_index].set_data(trajectory[:, 0], trajectory[:, 1])
@@ -198,7 +213,7 @@ def save_trajectory_animation(
             "-y",
             "-i", str(path),
             "-filter_complex",
-            "[0:v]fps=30,split=2[a][b];"
+            f"[0:v]fps={fps},split=2[a][b];"
             "[a]palettegen=stats_mode=full[p];"
             "[b][p]paletteuse=dither=bayer:bayer_scale=5[v]",
             "-map", "[v]",

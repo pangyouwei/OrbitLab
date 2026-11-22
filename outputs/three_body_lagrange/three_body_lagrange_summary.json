@@ -1,9 +1,9 @@
 {
-  "config": "examples/three_body_lagrange.json",
+  "config": "examples\\three_body_lagrange.json",
   "bodies": [
-    "body_A",
-    "body_B",
-    "body_C"
+    "star_A",
+    "star_B",
+    "star_C"
   ],
   "steps": 6000,
   "dt": 0.001,
