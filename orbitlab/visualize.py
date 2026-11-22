@@ -16,18 +16,16 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FFMpegWriter, FuncAnimation
 import numpy as np
 
-BODY_COLORS = [
-    "tab:orange",
-    "tab:blue",
-    "tab:green",
-    "tab:red",
-    "tab:purple",
-    "tab:brown",
-    "tab:pink",
-    "tab:gray",
-    "tab:olive",
-    "tab:cyan",
-]
+BODY_COLORS = ["tab:orange", "tab:blue", "tab:green"]
+
+
+def body_colors(count: int) -> list:
+    """Give small systems familiar colors and larger systems a wider palette."""
+    if count <= len(BODY_COLORS):
+        return BODY_COLORS[:count]
+    if count <= 20:
+        return list(plt.get_cmap("tab20").colors[:count])
+    return [plt.get_cmap("hsv")(index / count) for index in range(count)]
 
 
 def save_trajectory_csv(
@@ -64,12 +62,19 @@ def save_trajectory_plot(
     """Save an equal-aspect plot of all body trajectories."""
     figure, axis = plt.subplots(figsize=(8, 8), dpi=200)
     largest_mass = float(np.max(masses))
+    colors = body_colors(len(names))
+    density_scale = min(1.0, 3.0 / len(names))
     for body_index, name in enumerate(names):
         trajectory = positions[:, body_index, :]
-        color = BODY_COLORS[body_index % len(BODY_COLORS)]
-        axis.plot(trajectory[:, 0], trajectory[:, 1], color=color, linewidth=2, label=name)
+        color = colors[body_index]
+        axis.plot(
+            trajectory[:, 0], trajectory[:, 1], color=color,
+            linewidth=max(0.65, 2 * density_scale**0.5), label=name,
+        )
         marker_size = max(
-            42.0, 260.0 * (float(masses[body_index]) / largest_mass) ** (1 / 3)
+            12.0,
+            260.0 * (float(masses[body_index]) / largest_mass) ** (1 / 3)
+            * density_scale,
         )
         axis.scatter(
             trajectory[0, 0],
@@ -93,7 +98,8 @@ def save_trajectory_plot(
     axis.set_ylabel("y")
     axis.set_aspect("equal", adjustable="box")
     axis.grid(True, alpha=0.18)
-    axis.legend(frameon=False)
+    if len(names) <= 10:
+        axis.legend(frameon=False)
     figure.tight_layout()
     figure.savefig(path)
     figure.savefig(path.with_suffix(".svg"))
@@ -114,16 +120,25 @@ def save_trajectory_animation(
         0, len(times) - 1, num=min(max_frames, len(times)), dtype=int
     )
     largest_mass = float(np.max(masses))
+    colors = body_colors(len(names))
+    density_scale = min(1.0, 3.0 / len(names))
     figure, axis = plt.subplots(figsize=(8, 8), dpi=120)
     trails = []
     markers = []
     for body_index, name in enumerate(names):
-        color = BODY_COLORS[body_index % len(BODY_COLORS)]
-        (trail,) = axis.plot([], [], color=color, linewidth=1.8, alpha=0.7)
+        color = colors[body_index]
+        (trail,) = axis.plot(
+            [], [], color=color, linewidth=max(0.65, 1.8 * density_scale**0.5),
+            alpha=0.7,
+        )
         trails.append(trail)
         (marker,) = axis.plot(
             [], [], "o", color=color,
-            markersize=12 * (float(masses[body_index]) / largest_mass) ** (1 / 3),
+            markersize=max(
+                3.0,
+                12 * (float(masses[body_index]) / largest_mass) ** (1 / 3)
+                * density_scale**0.5,
+            ),
             markeredgecolor=color, markeredgewidth=0.5, label=name,
         )
         markers.append(marker)
@@ -140,7 +155,8 @@ def save_trajectory_animation(
     axis.set_ylabel("y")
     axis.set_title("OrbitLab: 2D N-body motion")
     axis.grid(True, alpha=0.25)
-    axis.legend(loc="upper right")
+    if len(names) <= 10:
+        axis.legend(loc="upper right")
     time_label = axis.text(0.03, 0.96, "", transform=axis.transAxes, va="top")
 
     def update(frame_index: int):

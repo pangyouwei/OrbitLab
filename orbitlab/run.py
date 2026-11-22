@@ -94,7 +94,20 @@ def main() -> None:
         default=Path("outputs"),
         help="base directory; a subdirectory named after the config is created",
     )
+    parser.add_argument(
+        "--skip-animation",
+        action="store_true",
+        help="skip AVI/GIF encoding for large simulations",
+    )
+    parser.add_argument(
+        "--max-frames",
+        type=int,
+        default=180,
+        help="maximum number of animation frames (default: 180)",
+    )
     args = parser.parse_args()
+    if args.max_frames < 2:
+        parser.error("--max-frames must be at least 2")
 
     config = load_config(args.config)
     times, positions, velocities, names, masses = simulate(config)
@@ -109,9 +122,15 @@ def main() -> None:
     save_trajectory_plot(
         output_dir / f"{stem}_trajectory.png", positions, names, masses
     )
-    save_trajectory_animation(
-        output_dir / f"{stem}_animation.avi", times, positions, names, masses
-    )
+    if not args.skip_animation:
+        save_trajectory_animation(
+            output_dir / f"{stem}_animation.avi",
+            times,
+            positions,
+            names,
+            masses,
+            max_frames=args.max_frames,
+        )
     diagnostic_history = compute_diagnostic_history(
         times,
         positions,
