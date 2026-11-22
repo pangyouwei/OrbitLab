@@ -106,6 +106,11 @@ def main() -> None:
         help="regenerate AVI/GIF without rewriting other outputs",
     )
     parser.add_argument(
+        "--static-only",
+        action="store_true",
+        help="regenerate the static PNG/SVG without other outputs",
+    )
+    parser.add_argument(
         "--duration",
         type=float,
         help="physical simulation time; overrides steps using the JSON dt",
@@ -129,8 +134,8 @@ def main() -> None:
         parser.error("--fps must be positive")
     if args.duration is not None and (not math.isfinite(args.duration) or args.duration <= 0):
         parser.error("--duration must be finite and positive")
-    if args.animation_only and args.skip_animation:
-        parser.error("--animation-only and --skip-animation cannot be combined")
+    if sum((args.animation_only, args.static_only, args.skip_animation)) > 1:
+        parser.error("--animation-only, --static-only, and --skip-animation are mutually exclusive")
 
     config = load_config(args.config)
     if args.duration is not None:
@@ -152,6 +157,12 @@ def main() -> None:
             fps=args.fps,
         )
         print(f"Saved animation to {output_dir.resolve()}")
+        return
+    if args.static_only:
+        save_trajectory_plot(
+            output_dir / f"{stem}_trajectory.png", positions, names, masses
+        )
+        print(f"Saved static plot to {output_dir.resolve()}")
         return
     save_trajectory_csv(
         output_dir / f"{stem}_trajectory.csv", times, positions, velocities, names

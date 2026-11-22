@@ -14,7 +14,7 @@ import numpy as np
 from orbitlab.compare import compare_configs
 from orbitlab.generate import make_ring_config
 from orbitlab.physics import accelerations, center_of_mass, center_of_mass_velocity
-from orbitlab.visualize import camera_limits
+from orbitlab.visualize import animation_frame_indices, camera_limits
 
 
 class NBodyTests(unittest.TestCase):
@@ -53,12 +53,27 @@ class NBodyTests(unittest.TestCase):
         )
         frame_indices = np.array([0, 1, 2])
         limits = camera_limits(positions, frame_indices)
-        for frame, (left, right, bottom, top) in enumerate(limits):
-            history = positions[: frame + 1]
-            self.assertLess(left, float(history[:, :, 0].min()))
-            self.assertGreater(right, float(history[:, :, 0].max()))
-            self.assertLess(bottom, float(history[:, :, 1].min()))
-            self.assertGreater(top, float(history[:, :, 1].max()))
+        np.testing.assert_array_equal(limits[0], limits[-1])
+        left, right, bottom, top = limits[0]
+        initial = positions[0]
+        self.assertLess(left, float(initial[:, 0].min()))
+        self.assertGreater(right, float(initial[:, 0].max()))
+        self.assertLess(bottom, float(initial[:, 1].min()))
+        self.assertGreater(top, float(initial[:, 1].max()))
+        self.assertGreater(float(positions[-1, :, 0].max()), right)
+
+    def test_large_animation_stops_after_majority_leaves_view(self) -> None:
+        initial = np.array([[1.0, 0.0], [0.0, 1.0], [-1.0, 0.0], [0.0, -1.0]])
+        positions = np.stack(
+            (
+                initial,
+                initial + np.array([0.1, 0.0]),
+                initial + np.array([2.0, 0.0]),
+                initial + np.array([3.0, 0.0]),
+            )
+        )
+        indices = animation_frame_indices(positions, 240)
+        self.assertEqual(indices[-1], 2)
 
     def test_duration_option_overrides_json_steps(self) -> None:
         project_root = Path(__file__).resolve().parents[1]

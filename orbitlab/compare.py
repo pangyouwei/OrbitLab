@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from .run import load_config, simulate
+from .visualize import apply_dark_theme
 
 
 def compare_configs(first: dict, second: dict) -> tuple[np.ndarray, np.ndarray]:
@@ -61,11 +62,12 @@ def main() -> None:
         writer.writerows(zip(times, separation))
 
     figure, axis = plt.subplots(figsize=(8, 5), dpi=180)
+    apply_dark_theme(figure, axis)
     axis.semilogy(times[1:], separation[1:], color="tab:blue", linewidth=1.8)
     axis.set_xlabel("Simulation time")
     axis.set_ylabel("RMS position separation")
     axis.set_title("Nearby N-body trajectories diverge")
-    axis.grid(True, alpha=0.25, which="both")
+    axis.grid(True, color="white", alpha=0.25, which="both")
     figure.tight_layout()
     figure.savefig(args.output_dir / "separation.png")
     plt.close(figure)

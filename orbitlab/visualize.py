@@ -29,19 +29,51 @@ def body_colors(count: int) -> list:
 
 
 def camera_limits(positions: np.ndarray, frame_indices: np.ndarray) -> np.ndarray:
-    """Keep every body and its entire trail visible through each frame."""
-    lower = np.minimum.accumulate(positions.min(axis=1), axis=0)[frame_indices]
-    upper = np.maximum.accumulate(positions.max(axis=1), axis=0)[frame_indices]
-    centers = (lower + upper) / 2
-    half_widths = np.maximum(np.max(upper - lower, axis=1) * 0.62, 0.1)
-    return np.column_stack(
-        (
-            centers[:, 0] - half_widths,
-            centers[:, 0] + half_widths,
-            centers[:, 1] - half_widths,
-            centers[:, 1] + half_widths,
-        )
+    """Return one fixed viewport based only on the initial body positions."""
+    initial_positions = positions[0]
+    lower = initial_positions.min(axis=0)
+    upper = initial_positions.max(axis=0)
+    center = (lower + upper) / 2
+    initial_radius = float(np.max(np.abs(initial_positions - center)))
+    half_width = max(float(np.max(upper - lower)) * 0.15, initial_radius * 1.15, 0.1)
+    fixed = np.array(
+        [
+            center[0] - half_width,
+            center[0] + half_width,
+            center[1] - half_width,
+            center[1] + half_width,
+        ]
     )
+    return np.repeat(fixed[None, :], len(frame_indices), axis=0)
+
+
+def animation_frame_indices(positions: np.ndarray, max_frames: int) -> np.ndarray:
+    """For larger systems, finish when most bodies first leave the fixed view."""
+    last_step = len(positions) - 1
+    if positions.shape[1] >= 4:
+        left, right, bottom, top = camera_limits(positions, np.array([0]))[0]
+        outside = (
+            (positions[:, :, 0] < left)
+            | (positions[:, :, 0] > right)
+            | (positions[:, :, 1] < bottom)
+            | (positions[:, :, 1] > top)
+        )
+        majority = np.flatnonzero(outside.sum(axis=1) > positions.shape[1] // 2)
+        if len(majority):
+            last_step = int(majority[0])
+    return np.linspace(0, last_step, num=min(max_frames, last_step + 1), dtype=int)
+
+
+def apply_dark_theme(figure, axis) -> None:
+    """Use a black canvas with light labels and subtle grid lines."""
+    figure.patch.set_facecolor("black")
+    axis.set_facecolor("black")
+    for spine in axis.spines.values():
+        spine.set_color("white")
+    axis.tick_params(colors="white")
+    axis.xaxis.label.set_color("white")
+    axis.yaxis.label.set_color("white")
+    axis.title.set_color("white")
 
 
 def save_trajectory_csv(
@@ -77,6 +109,7 @@ def save_trajectory_plot(
 ) -> None:
     """Save an equal-aspect plot of all body trajectories."""
     figure, axis = plt.subplots(figsize=(8, 8), dpi=200)
+    apply_dark_theme(figure, axis)
     largest_mass = float(np.max(masses))
     colors = body_colors(len(names))
     density_scale = min(1.0, 3.0 / len(names))
@@ -113,9 +146,11 @@ def save_trajectory_plot(
     axis.set_xlabel("x")
     axis.set_ylabel("y")
     axis.set_aspect("equal", adjustable="box")
-    axis.grid(True, alpha=0.18)
+    axis.grid(True, color="white", alpha=0.18)
     if len(names) <= 10:
-        axis.legend(frameon=False)
+        legend = axis.legend(frameon=False)
+        for text in legend.get_texts():
+            text.set_color("white")
     figure.tight_layout()
     figure.savefig(path)
     figure.savefig(path.with_suffix(".svg"))
@@ -132,14 +167,13 @@ def save_trajectory_animation(
     fps: int = 20,
 ) -> None:
     """Save an AVI animation and a GIF preview of all body trajectories."""
-    frame_indices = np.linspace(
-        0, len(times) - 1, num=min(max_frames, len(times)), dtype=int
-    )
+    frame_indices = animation_frame_indices(positions, max_frames)
     limits = camera_limits(positions, frame_indices)
     largest_mass = float(np.max(masses))
     colors = body_colors(len(names))
     density_scale = min(1.0, 3.0 / len(names))
     figure, axis = plt.subplots(figsize=(8, 8), dpi=120)
+    apply_dark_theme(figure, axis)
     trails = []
     markers = []
     for body_index, name in enumerate(names):
@@ -166,16 +200,17 @@ def save_trajectory_animation(
     axis.set_xlabel("x")
     axis.set_ylabel("y")
     axis.set_title("OrbitLab: 2D N-body motion")
-    axis.grid(True, alpha=0.25)
+    axis.grid(True, color="white", alpha=0.25)
     if len(names) <= 10:
-        axis.legend(loc="upper right")
-    time_label = axis.text(0.03, 0.96, "", transform=axis.transAxes, va="top")
+        legend = axis.legend(loc="upper right", facecolor="black", edgecolor="white")
+        for text in legend.get_texts():
+            text.set_color("white")
+    time_label = axis.text(
+        0.03, 0.96, "", transform=axis.transAxes, va="top", color="white"
+    )
 
     def update(frame_index: int):
         step_index = int(frame_indices[frame_index])
-        left, right, bottom, top = limits[frame_index]
-        axis.set_xlim(left, right)
-        axis.set_ylim(bottom, top)
         for body_index in range(len(names)):
             trajectory = positions[: step_index + 1, body_index, :]
             trails[body_index].set_data(trajectory[:, 0], trajectory[:, 1])
